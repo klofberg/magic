@@ -1,7 +1,8 @@
 ﻿// Learn more about F# at http://fsharp.org
 
 open System
-open System.Runtime.InteropServices
+open System.Text.RegularExpressions
+open FSharp.Data
 
 type Color =
     | White
@@ -373,6 +374,18 @@ type Card = {
     rarity : Rarity
 }
 
+type Gatherer = HtmlProvider<"https://gatherer.wizards.com/Pages/Search/Default.aspx?name=+[Ajani]+[Goldmane]">
+
+
+let loadCard name =
+    let x = Gatherer.Load ("https://gatherer.wizards.com/Pages/Search/Default.aspx?name=+[Ajani]+[Goldmane]")
+    let s =
+        x.Tables.Table2.Rows
+        |> Seq.head
+        |> fun row -> row.Column2
+
+    ()
+
 let core2020 =
     [
         "Aerial Assult", {
@@ -487,13 +500,14 @@ let printCard x y name (card : Card) =
 [<EntryPoint>]
 let main argv =
 
-    Console.Clear ()
-    Console.ResetColor ()
-
-    let (name, card) = Map.toList core2020 |> List.head
-    printCard 0 0 name card
-
-    let (name, card) = Map.toList core2020 |> List.skip 1 |> List.head
-    printCard 36 0 name card
+    Console.WriteLine ( loadCard "" )
+//    Console.Clear ()
+//    Console.ResetColor ()
+//
+//    let (name, card) = Map.toList core2020 |> List.head
+//    printCard 0 0 name card
+//
+//    let (name, card) = Map.toList core2020 |> List.skip 1 |> List.head
+//    printCard 36 0 name card
 
     0
