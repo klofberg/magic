@@ -374,16 +374,77 @@ type Card = {
     rarity : Rarity
 }
 
-type Gatherer = HtmlProvider<"https://gatherer.wizards.com/Pages/Search/Default.aspx?name=+[Ajani]+[Goldmane]">
+//type Gatherer = HtmlProvider<"https://gatherer.wizards.com/Pages/Search/Default.aspx?name=+[Ajani]+[Goldmane]">
 
+[<Struct>]
+type OptionalBuilder =
+    member __.Bind(opt, binder) =
+        match opt with
+        | Some value -> binder value
+        | None -> None
+    member __.Return(value) = Some value
 
-let loadCard name =
-    let x = Gatherer.Load ("https://gatherer.wizards.com/Pages/Search/Default.aspx?name=+[Ajani]+[Goldmane]")
-    let s =
-        x.Tables.Table2.Rows
-        |> Seq.head
-        |> fun row -> row.Column2
+let optional = OptionalBuilder()
 
+let selectValueNode ids (doc : HtmlDocument) =
+    doc.Descendants(fun n -> ids |> List.contains (n.AttributeValue "id"))
+    |> Seq.tryHead
+    |> Option.bind (fun n ->
+        n.Descendants(fun n -> n.AttributeValue "class" = "value")
+        |> Seq.tryHead)
+
+module Option =
+    let sequence xs =
+        let folder x acc =
+            match x,acc with
+            | Some x, Some list -> Some (x :: list)
+            | Some _, None _    -> None
+            | None _, Some _    -> None
+            | None _, None _    -> None
+        List.foldBack folder xs (Some [])
+
+let loadCard (name : string) =
+    let nameParts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries) |> Array.map (fun x -> sprintf "[%s]" x) |> String.concat "+"
+    let doc = HtmlDocument.Load (sprintf "https://gatherer.wizards.com/Pages/Search/Default.aspx?name=%s" nameParts)
+    let s = optional {
+        let! name =
+            doc
+            |> selectValueNode [
+                "ctl00_ctl00_ctl00_MainContent_SubContent_SubContent_nameRow"
+                "ctl00_ctl00_ctl00_MainContent_SubContent_SubContent_ctl02_nameRow"
+            ]
+            |> Option.map (fun x -> x.InnerText().Trim())
+
+        let! manaCostNode =
+            doc
+            |> selectValueNode [
+                "ctl00_ctl00_ctl00_MainContent_SubContent_SubContent_manaRow"
+                "ctl00_ctl00_ctl00_MainContent_SubContent_SubContent_ctl02_manaRow"
+            ]
+        let! manaCost =
+            manaCostNode.CssSelect "img"
+            |> List.map (fun img -> (img.Attribute "src").Value())
+            |> List.map (fun x -> Regex.Match(x, "&name=([0-9WURGB])&").Groups.[1].Value)
+            |> List.map (function
+                | "W" -> Some (1, Color.White)
+                | "U" -> Some (1, Color.Blue)
+                | "R" -> Some (1, Color.Red)
+                | "G" -> Some (1, Color.Green)
+                | "B" -> Some (1, Color.Black)
+                | unspecified ->
+                    match Int32.TryParse unspecified with
+                        | true, cnt -> Some (cnt, Color.Unspecified)
+                        | _ -> None)
+            |> Option.sequence
+        let manaCost =
+            manaCost
+            |> List.groupBy (fun (_, color) -> color)
+            |> List.map (fun (color, x) -> color, x |> List.sumBy (fun (cost, _) -> cost))
+
+        return name, manaCost
+    }
+
+    printf "%A" s
     ()
 
 let core2020 =
@@ -500,7 +561,7 @@ let printCard x y name (card : Card) =
 [<EntryPoint>]
 let main argv =
 
-    Console.WriteLine ( loadCard "" )
+    Console.WriteLine ( loadCard "Aberrant Researcher" )
 //    Console.Clear ()
 //    Console.ResetColor ()
 //
