@@ -1,0 +1,23 @@
+1,Overgrowth Elemental
+4,Silverback Shaman
+3,Rugged Highlands
+2,Thicket Crasher
+4,Shock
+4,Leafkin Druid
+4,Chandra's Embercat
+2,Evolving Wilds
+3,Ferocious Pup
+2,Nightpack Ambusher
+3,Chandra, Novice Pyromancer
+1,Thrashing Brontodon
+1,Cavalier of Thorns
+1,Lavakin Brawler
+1,Goblin Smuggler
+1,Creeping Trailblazer
+1,Prey Upon
+1,Shivan Dragon
+1,Scampering Scorcher
+1,Rabbid Bite
+1,Drakuseth, Maw of Flames
+7,Mountain
+11,Forest
